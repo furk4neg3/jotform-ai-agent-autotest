@@ -76,6 +76,55 @@ export default function JotformAIAgent() {
   const [actionButtonText, setActionButtonText] = useState("")
   const [actionButtonUrl, setActionButtonUrl] = useState("")
 
+  // Form lists and KBs
+  const [forms, setForms] = useState<{ id: string; title: string }[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<{ id: string; name: string }[]>([]);
+
+  // Email action state
+  const [actionEmailSubject, setActionEmailSubject] = useState("");
+  const [actionEmailContent, setActionEmailContent] = useState("");
+  const [actionEmailSender, setActionEmailSender] = useState("");
+  const [actionEmailReplyTo, setActionEmailReplyTo] = useState("");
+  const [actionEmailRecipient, setActionEmailRecipient] = useState("");
+
+  // API action state
+  const [actionApiMethod, setActionApiMethod] = useState("GET");
+  const [actionApiEndpoint, setActionApiEndpoint] = useState("");
+
+  // Website search action state
+  const [actionWebsiteUrl, setActionWebsiteUrl] = useState("");
+  const [actionWebsiteSearchFor, setActionWebsiteSearchFor] = useState("");
+
+  // Video action state
+  const [actionVideoPlatform, setActionVideoPlatform] = useState("");
+  const [actionVideoUrl, setActionVideoUrl] = useState("");
+  const fetchForms = async () => {
+    try {
+      if(!config) return;
+      const res = await fetch(`${config.flaskApiUrl}/get_forms`); 
+      if (!res.ok) throw new Error(res.statusText);
+      setForms(await res.json());
+    } catch (e) {
+      showError("Failed to load forms");
+    }
+  };
+
+  const fetchKnowledgeBases = async () => {
+    if (!agentId || !config) return;
+    try {
+      const res = await fetch(`${config.flaskApiUrl}/get_materials/${agentId}`);
+      if (!res.ok) throw new Error(res.statusText);
+      setKnowledgeBases(await res.json());
+    } catch {
+      showError("Failed to load knowledge bases");
+    }
+  };
+
+  useEffect(() => {
+    if (actionType === "fill-form") fetchForms();
+    else if (actionType === "use-knowledge-base") fetchKnowledgeBases();
+  }, [actionType, agentId]);
+
   // Persona form state
   const [personaProperty, setPersonaProperty] = useState("")
   const [personaValue, setPersonaValue] = useState("")
@@ -139,9 +188,40 @@ export default function JotformAIAgent() {
       return
     }
 
-    let actionValueData = actionValue
-    if (actionType === "show-button") {
-      actionValueData = { text: actionButtonText, url: actionButtonUrl }
+    let actionValueData: any;
+    if (actionType === "fill-form") {
+      actionValueData = actionValue; // selected form ID
+    } else if (actionType === "show-button") {
+      actionValueData = { text: actionButtonText, url: actionButtonUrl };
+    } else if (actionType === "send-email") {
+      actionValueData = {
+        subject: actionEmailSubject,
+        content: actionEmailContent,
+        senderName: actionEmailSender,
+        replyTo: actionEmailReplyTo,
+        recipient: actionEmailRecipient,
+      };
+    } else if (actionType === "send-api-request") {
+      actionValueData = {
+        method: actionApiMethod,
+        endpoint: actionApiEndpoint,
+      };
+    } else if (actionType === "search-in-website") {
+      actionValueData = {
+        website: actionWebsiteUrl,
+        searchfor: actionWebsiteSearchFor,
+      };
+    } else if (actionType === "show-video") {
+      actionValueData = {
+        platform: actionVideoPlatform,
+        url: actionVideoUrl,
+      };
+    } else if (actionType === "use-knowledge-base") {
+      actionValueData = actionValue; // selected KB ID
+    } else if (actionType === "show-screen-share-button") {
+      actionValueData = {};
+    } else {
+      actionValueData = actionValue;
     }
 
     const operation: QueuedOperation = {
@@ -163,6 +243,17 @@ export default function JotformAIAgent() {
     setActionValue("")
     setActionButtonText("")
     setActionButtonUrl("")
+    setActionEmailSubject("");
+    setActionEmailContent("");
+    setActionEmailSender("");
+    setActionEmailReplyTo("");
+    setActionEmailRecipient("");
+    setActionApiMethod("GET");
+    setActionApiEndpoint("");
+    setActionWebsiteUrl("");
+    setActionWebsiteSearchFor("");
+    setActionVideoPlatform("");
+    setActionVideoUrl("");
   }
 
   const queuePersona = () => {
@@ -468,36 +559,95 @@ export default function JotformAIAgent() {
                     </div>
                   )}
 
-                  {actionType === "show-button" ? (
+                  {actionType === "fill-form" && (
+                    <div>
+                      <Label>Select Form</Label>
+                      <Select value={actionValue as string} onValueChange={setActionValue}>
+                        <SelectTrigger><SelectValue placeholder="Loading forms…" /></SelectTrigger>
+                        <SelectContent>
+                          {forms.map(f => <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {actionType === "show-button" && (
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Button Text</Label>
-                        <Input
-                          value={actionButtonText}
-                          onChange={(e) => setActionButtonText(e.target.value)}
-                          placeholder="e.g. Visit Website"
-                          className="h-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-                        />
+                        <Label>Button Text</Label>
+                        <Input value={actionButtonText} onChange={e => setActionButtonText(e.target.value)} placeholder="e.g. Visit Website" />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Button URL</Label>
-                        <Input
-                          value={actionButtonUrl}
-                          onChange={(e) => setActionButtonUrl(e.target.value)}
-                          placeholder="https://example.com"
-                          className="h-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-                        />
+                        <Label>Button URL</Label>
+                        <Input value={actionButtonUrl} onChange={e => setActionButtonUrl(e.target.value)} placeholder="https://..." />
                       </div>
                     </div>
-                  ) : (
+                  )}
+                  {actionType === "send-email" && (
+                    <div className="space-y-4">
+                      <div><Label>Email Subject</Label><Input value={actionEmailSubject} onChange={e => setActionEmailSubject(e.target.value)} /></div>
+                      <div><Label>Email Content (HTML)</Label><Textarea value={actionEmailContent} onChange={e => setActionEmailContent(e.target.value)} /></div>
+                      <div><Label>Sender Name</Label><Input value={actionEmailSender} onChange={e => setActionEmailSender(e.target.value)} /></div>
+                      <div><Label>Reply-To Email</Label><Input value={actionEmailReplyTo} onChange={e => setActionEmailReplyTo(e.target.value)} /></div>
+                      <div><Label>Recipient Email</Label><Input value={actionEmailRecipient} onChange={e => setActionEmailRecipient(e.target.value)} /></div>
+                    </div>
+                  )}
+                  {actionType === "send-api-request" && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Method</Label>
+                        <Select value={actionApiMethod} onValueChange={setActionApiMethod}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GET">GET</SelectItem>
+                            <SelectItem value="POST">POST</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>Endpoint URL</Label><Input value={actionApiEndpoint} onChange={e => setActionApiEndpoint(e.target.value)} /></div>
+                    </div>
+                  )}
+                  {actionType === "search-in-website" && (
+                    <div className="space-y-4">
+                      <div><Label>Website URL</Label><Input value={actionWebsiteUrl} onChange={e => setActionWebsiteUrl(e.target.value)} /></div>
+                      <div><Label>Search For</Label><Input value={actionWebsiteSearchFor} onChange={e => setActionWebsiteSearchFor(e.target.value)} /></div>
+                    </div>
+                  )}
+                  {actionType === "show-video" && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Platform</Label>
+                        <Select value={actionVideoPlatform} onValueChange={setActionVideoPlatform}>
+                          <SelectTrigger><SelectValue placeholder="Select platform" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="YouTube">YouTube</SelectItem>
+                            <SelectItem value="Vimeo">Vimeo</SelectItem>
+                            <SelectItem value="23 Video">23 Video</SelectItem>
+                            <SelectItem value="Loom Video Embed">Loom Video</SelectItem>
+                            <SelectItem value="Animoto">Animoto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>Video URL</Label><Input value={actionVideoUrl} onChange={e => setActionVideoUrl(e.target.value)} /></div>
+                    </div>
+                  )}
+                  {actionType === "use-knowledge-base" && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">Action Value</Label>
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => setActionValue(e.target.value)}
-                        placeholder="Enter action value"
-                        className="h-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-                      />
+                      <Label>Select Knowledge Base</Label>
+                      <Select value={actionValue as string} onValueChange={setActionValue}>
+                        <SelectTrigger><SelectValue placeholder="Loading…" /></SelectTrigger>
+                        <SelectContent>
+                          {knowledgeBases.map(kb => <SelectItem key={kb.id} value={kb.id}>{kb.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {actionType === "show-screen-share-button" && (
+                    <p>No additional settings required for screen-share button.</p>
+                  )}
+                  {!["fill-form","show-button","send-email","send-api-request","search-in-website","show-video","use-knowledge-base","show-screen-share-button"].includes(actionType) && (
+                    <div>
+                      <Label>Action Value</Label>
+                      <Input value={actionValue as string} onChange={e => setActionValue(e.target.value)} placeholder="Enter action value" />
                     </div>
                   )}
 

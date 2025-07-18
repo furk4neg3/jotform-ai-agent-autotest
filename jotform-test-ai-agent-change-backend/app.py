@@ -471,6 +471,7 @@ def get_forms():
         'checkDocuments': 0
     }
     resp = client.session.get(url, params=params)
+    print(resp)
     resp.raise_for_status()
     forms = resp.json().get('content', [])
     # return the array of { id, title, … }
@@ -713,7 +714,8 @@ def batch_update():
 @app.route('/config', methods=['GET'])
 def config():
     return jsonify({
-        'jotformApiKey': os.getenv('JOTFORM_API_KEY')
+        'jotformApiKey': os.getenv('JOTFORM_API_KEY'),
+        'flaskApiUrl': 'http://127.0.0.1:5000'
     })
 
 
