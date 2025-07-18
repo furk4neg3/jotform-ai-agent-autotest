@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+        integrity="sha512-dNmEQ1N+qsCxqVl8+I1Xxj1CS3/63RcnBB+Uj+3gVp3xIy8g1exK/kqXpc05beIf6B6ghVFazD+XmYXG4vYvgA=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    />
+    <title>AI Agent Configuration - Jotform Style</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin: 20px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            max-width: 800px;
+            align-self: center;
+            justify-self: center;
+        }
+
+        .main-container.centered {
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main-container.split .form-container {
+            width: 50%;
+            max-width: none;
+            margin: 20px 10px 20px 20px;
+            align-self: stretch;
+        }
+
+        .chat-container {
+            width: 50%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            margin: 20px 20px 20px 10px;
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+        }
+
+        .main-container.split .chat-container {
+            display: flex;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #4A5568;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .agent-id-section {
+            background: #F7FAFC;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid #E2E8F0;
+            transition: all 0.3s ease;
+        }
+
+        .agent-id-section:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4A5568;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px 18px;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #F7FAFC;
+            border-radius: 15px;
+            padding: 8px;
+            margin-bottom: 30px;
+            gap: 5px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #718096;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #CBD5E0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .batch-list {
+            background: #F7FAFC;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .batch-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .batch-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .batch-item-content {
+            flex: 1;
+        }
+
+        .batch-item-type {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .batch-item-details {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            background: #E53E3E;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #C53030;
+            transform: scale(1.05);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #E2E8F0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #E2E8F0;
+        }
+
+        .chat-header h3 {
+            color: #4A5568;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .chat-iframe {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #E2E8F0;
+            border-radius: 15px;
+            background: #F7FAFC;
+        }
+
+        .action-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-container.split {
+                flex-direction: column;
+            }
+
+            .main-container.split .form-container,
+            .main-container.split .chat-container {
+                width: 100%;
+                margin: 10px 20px;
+            }
+
+            .action-inputs {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-container {
+                padding: 25px;
+                margin: 10px;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .success-message {
+            background: #C6F6D5;
+            color: #22543D;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #38A169;
+        }
+
+        .error-message {
+            background: #FED7D7;
+            color: #742A2A;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #E53E3E;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container centered" id="mainContainer">
+        <div class="form-container">
+            <div class="header">
+                <h1>AI Agent Configuration</h1>
+                <p>Configure your Jotform AI Agent with knowledge, actions, and persona</p>
+            </div>
+
+            <div class="agent-id-section">
+                <div class="form-group">
+                    <label for="agent-id">Agent ID:</label>
+                    <input type="text" id="agent-id" placeholder="Enter your agent ID">
+                </div>
+            </div>
+
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('knowledge')"><i class="fas fa-database"></i>Add Knowledge</button>
+                <button class="tab-button" onclick="showTab('action')"><i class="fas fa-bolt"></i> Add Action</button>
+                <button class="tab-button" onclick="showTab('persona')"><i class="fas fa-user"></i> Change Persona</button>
+            </div>
+
+            <!-- Knowledge Tab -->
+            <div id="knowledge-tab" class="tab-content active">
+                <div class="form-group">
+                    <label for="knowledge-data">Knowledge Content:</label>
+                    <textarea id="knowledge-data" placeholder="Enter the knowledge content you want to add to the agent..."></textarea>
+                </div>
+                <button class="submit-btn" onclick="queueKnowledge()">Queue Change</button>
+            </div>
+
+            <!-- Action Tab -->
+            <div id="action-tab" class="tab-content">
+                <div class="action-inputs">
+                    <div class="form-group">
+                        <label for="trigger-type">Trigger Type:</label>
+                        <select id="trigger-type">
+                            <option value="">Select trigger type</option>
+                            <option value="talks-about">User Talks About</option>
+                            <option value="sentiment">User Sentiment Is</option>
+                            <option value="ask-about">User Asks About</option>
+                            <option value="conversation-start">Conversation Starts</option>
+                            <option value="intention">User Wants To</option>
+                            <option value="provides">User Provides</option>
+                            <option value="sentence-contains">User Sentence Contains</option>
+                            <option value="date-time">The Date Is</option>
+                            <option value="url-contains">Page URL Contains</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="action-type">Action Type:</label>
+                        <select id="action-type">
+                            <option value="">Select action type</option>
+                            <option value="talk-about">Talk About</option>
+                            <option value="say-exact-message">Say Exact Message</option>
+                            <option value="collect-value">Ask For Information About</option>
+                            <option value="always-include">Always Include</option>
+                            <option value="always-talk-about">Always Talk About</option>
+                            <option value="fill-form">Fill Form</option>
+                            <option value="show-button">Show Button</option>
+                            <option value="send-email">Send Email</option>
+                            <option value="send-api-request">Send API Request</option>
+                            <option value="search-in-website">Find in Website</option>
+                            <option value="show-video">Show Video</option>
+                            <option value="use-knowledge-base">Answer Using Knowledge Base</option>
+                            <option value="show-screen-share-button">Allow Screen Sharing for Visual Guidance</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" id="trigger-value-group">
+                    <label for="trigger-value">Trigger Value:</label>
+                    <input type="text" id="trigger-value" placeholder="Enter trigger value">
+                </div>
+                <div class="form-group" id="action-value-input-group">
+                    <label for="action-value-input">Action Value:</label>
+                    <input type="text" id="action-value-input" placeholder="Enter action value">
+                </div>
+                <!-- Additional action-specific fields (same as original) -->
+                <div class="form-group" id="action-value-select-group" style="display:none;">
+                    <label for="action-value-select">Select Form:</label>
+                    <select id="action-value-select">
+                        <option value="">Loading forms…</option>
+                    </select>
+                </div>
+                <div class="form-group" id="action-button-group" style="display:none;">
+                    <label for="action-button-text">Button Text:</label>
+                    <input type="text" id="action-button-text" placeholder="e.g. Go To LV">
+                    <label for="action-button-url">Button URL:</label>
+                    <input type="text" id="action-button-url" placeholder="https://...">
+                </div>
+                <div class="form-group" id="action-email-group" style="display:none;">
+                    <label for="action-email-subject">Email Subject:</label>
+                    <input type="text" id="action-email-subject" placeholder="Subject">
+                    <label for="action-email-content">Email Content (HTML):</label>
+                    <textarea id="action-email-content" placeholder="<p>Your message…</p>"></textarea>
+                    <label for="action-email-sender">Sender Name:</label>
+                    <input type="text" id="action-email-sender" placeholder="E.g. Acme Support">
+                    <label for="action-email-replyto">Reply-To Email:</label>
+                    <input type="email" id="action-email-replyto" placeholder="you@domain.com">
+                    <label for="action-email-recipient">Recipient Email:</label>
+                    <input type="email" id="action-email-recipient" placeholder="them@domain.com">
+                </div>
+                <div class="form-group" id="action-api-group" style="display: none;">
+                    <label for="action-api-method">Method:</label>
+                    <select id="action-api-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                    <label for="action-api-endpoint">Endpoint URL:</label>
+                    <input type="text" id="action-api-endpoint" placeholder="https://api.example.com/…">
+                </div>
+                <div class="form-group" id="action-website-group" style="display:none;">
+                    <label for="action-website-url">Website URL:</label>
+                    <input type="text" id="action-website-url" placeholder="https://example.com">
+                    <label for="action-website-searchfor">Search For:</label>
+                    <input type="text" id="action-website-searchfor" placeholder="Keyword or phrase">
+                </div>
+                <div class="form-group" id="action-video-group" style="display:none;">
+                    <label for="action-video-platform">Platform:</label>
+                    <select id="action-video-platform">
+                        <option value="">Select platform</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Vimeo">Vimeo</option>
+                        <option value="23 Video">23 Video</option>
+                        <option value="Loom Video Embed">Loom Video Embed</option>
+                        <option value="Animoto">Animoto</option>
+                    </select>
+                    <label for="action-video-url">Video URL:</label>
+                    <input type="text" id="action-video-url" placeholder="https://...">
+                </div>
+                <div class="form-group" id="action-kb-group" style="display:none;">
+                    <label for="action-kb-select">Select Knowledge Base:</label>
+                    <select id="action-kb-select">
+                        <option value="">Loading…</option>
+                    </select>
+                </div>
+                <button class="submit-btn" onclick="queueAction()">Queue Change</button>
+            </div>
+
+            <!-- Persona Tab -->
+            <div id="persona-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="persona-property">Property to Update:</label>
+                    <select id="persona-property">
+                        <option value="">Select property to update</option>
+                        <option value="language">Language</option>
+                        <option value="tone">Tone</option>
+                        <option value="chattiness">Chattiness</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="persona-value">New Value:</label>
+                    <select id="persona-value">
+                        <option value="">Select value</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agent-name">Agent Name:</label>
+                    <input type="text" id="agent-name" placeholder="Enter new agent name">
+                </div>
+                <div class="form-group">
+                    <label for="agent-role">Agent Role:</label>
+                    <input type="text" id="agent-role" placeholder="Enter new agent role">
+                </div>
+                <div class="form-group">
+                    <label for="new-guideline">New Chat Guideline:</label>
+                    <textarea id="new-guideline" placeholder="Enter a single new guideline"></textarea>
+                </div>
+                <button class="submit-btn" onclick="queuePersona()">Queue Change</button>
+            </div>
+
+            <!-- Batch Operations -->
+            <div class="batch-list" id="batch-list">
+                <div class="empty-state">No changes queued yet</div>
+            </div>
+            
+            <button id="execute-batch-btn" class="submit-btn" onclick="executeBatch()" disabled>
+                Apply All Changes
+            </button>
+
+            <!-- Loading indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+
+            <div id="message-container"></div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3>Live Chat Preview</h3>
+                <p>Test your agent configuration in real-time</p>
+            </div>
+            <iframe id="chat-iframe" class="chat-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let batchOps = [];
+        let JOTFORM_API_KEY;
+
+        // Persona value options
+        const personaOptions = {
+            language: [
+                { value: 'en', label: 'English' },
+                { value: 'es', label: 'Spanish' },
+                { value: 'fr', label: 'French' },
+                { value: 'de', label: 'German' },
+                { value: 'it', label: 'Italian' },
+                { value: 'pt', label: 'Portuguese' },
+                { value: 'zh', label: 'Chinese' },
+                { value: 'ja', label: 'Japanese' },
+                { value: 'ko', label: 'Korean' },
+                { value: 'ar', label: 'Arabic' }
+            ],
+            tone: [
+                { value: 'casual', label: 'Casual' },
+                { value: 'professional', label: 'Professional' },
+                { value: 'friendly', label: 'Friendly' }
+            ],
+            chattiness: [
+                { value: '1', label: 'Minimal (1)' },
+                { value: '2', label: 'Short (2)' },
+                { value: '3', label: 'Long (3)' },
+                { value: '4', label: 'Chatty (4)' }
+            ]
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            setupEventListeners();
+        });
+
+        // Load configuration
+        function loadConfig() {
+            fetch('/config')
+                .then(res => res.json())
+                .then(cfg => {
+                    JOTFORM_API_KEY = cfg.jotformApiKey;
+                })
+                .catch(err => console.error('Failed to load config', err));
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Persona property change
+            document.getElementById('persona-property').addEventListener('change', function() {
+                const property = this.value;
+                const valueSelect = document.getElementById('persona-value');
+                
+                valueSelect.innerHTML = '<option value="">Select value</option>';
+                
+                if (property && personaOptions[property]) {
+                    personaOptions[property].forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.label;
+                        valueSelect.appendChild(optionElement);
+                    });
+                }
+            });
+
+            // Trigger type change
+            document.getElementById('trigger-type').addEventListener('change', function() {
+                const type = this.value;
+                const valueGroup = document.getElementById('trigger-value-group');
+                
+                if (type === 'conversation-start') {
+                    valueGroup.style.display = 'none';
+                } else {
+                    valueGroup.style.display = 'block';
+                }
+
+                const input = document.getElementById('trigger-value');
+                if (type === 'url-contains') {
+                    input.placeholder = 'Enter substring of page URL';
+                } else if (type === 'sentence-contains') {
+                    input.placeholder = 'Enter keyword to match in sentence';
+                } else {
+                    input.placeholder = 'Enter trigger value';
+                }
+            });
+
+            // Action type change
+            document.getElementById('action-type').addEventListener('change', function() {
+                const type = this.value;
+                const isFill = type === 'fill-form';
+                const isShowBtn = type === 'show-button';
+                const isEmail = type === 'send-email';
+                const isApi = type === 'send-api-request';
+                const isSearchWS = type === 'search-in-website';
+                const isShowVideo = type === 'show-video';
+                const isKb = type === 'use-knowledge-base';
+                const isShare = type === 'show-screen-share-button';
+
+                document.getElementById('action-value-input-group').style.display =
+                    (!isFill && !isShowBtn && !isEmail && !isApi && !isSearchWS && !isShowVideo && !isKb && !isShare)
+                    ? 'block' : 'none';
+
+                document.getElementById('action-value-select-group').style.display = isFill ? 'block' : 'none';
+                document.getElementById('action-button-group').style.display = isShowBtn ? 'block' : 'none';
+                document.getElementById('action-email-group').style.display = isEmail ? 'block' : 'none';
+                document.getElementById('action-api-group').style.display = isApi ? 'block' : 'none';
+                document.getElementById('action-website-group').style.display = isSearchWS ? 'block' : 'none';
+                document.getElementById('action-video-group').style.display = isShowVideo ? 'block' : 'none';
+                document.getElementById('action-kb-group').style.display = isKb ? 'block' : 'none';
+
+                if (isFill) fetchForms();
+                if (isKb) fetchKnowledgeBases(document.getElementById('agent-id').value);
+            });
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Fetch forms
+        async function fetchForms() {
+            const select = document.getElementById('action-value-select');
+            select.innerHTML = '<option value="">Loading forms…</option>';
+            try {
+                const res = await fetch('/get_forms');
+                const forms = await res.json();
+                select.innerHTML = '<option value="">Select a form</option>';
+                forms.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.title;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                select.innerHTML = '<option value="">Error loading forms</option>';
+            }
+        }
+
+        // Fetch knowledge bases
+        async function fetchKnowledgeBases(agentId) {
+            const select = document.getElementById('action-kb-select');
+            select.innerHTML = '<option>Loading…</option>';
+            try {
+                const res = await fetch(`/get_materials/${agentId}`);
+                if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+                const materials = await res.json();
+                select.innerHTML = '<option value="">Select one…</option>';
+                materials.forEach(mat => {
+                    const opt = document.createElement('option');
+                    opt.value = mat.uuid;
+                    opt.textContent = mat.title;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Error loading KB:', err);
+                select.innerHTML = '<option>Error loading materials</option>';
+            }
+        }
+
+        // Render batch list with delete functionality
+        function renderBatchList() {
+            const list = document.getElementById('batch-list');
+            
+            if (batchOps.length === 0) {
+                list.innerHTML = '<div class="empty-state">No changes queued yet</div>';
+                document.getElementById('execute-batch-btn').disabled = true;
+                return;
+            }
+
+            list.innerHTML = batchOps.map((op, i) => {
+                let details = '';
+                if (op.type === 'knowledge') {
+                    details = `Knowledge: ${op.data.substring(0, 50)}...`;
+                } else if (op.type === 'action') {
+                    details = `${op.trigger_type} → ${op.action_type}`;
+                } else if (op.type === 'update_persona') {
+                    if (op.name) details = `Name: ${op.name}`;
+                    else if (op.role) details = `Role: ${op.role}`;
+                    else if (op.guideline) details = `Guideline: ${op.guideline.substring(0, 30)}...`;
+                    else details = `${op.update_prop}: ${op.update_value}`;
+                }
+
+                return `
+                    <div class="batch-item">
+                        <div class="batch-item-content">
+                            <div class="batch-item-type">${op.type}</div>
+                            <div class="batch-item-details">${details}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteBatchItem(${i})">Delete</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('execute-batch-btn').disabled = false;
+        }
+
+        // Delete batch item
+        function deleteBatchItem(index) {
+            batchOps.splice(index, 1);
+            renderBatchList();
+            showMessage('Change removed from queue', 'success');
+        }
+
+        // Queue functions
+        function queueKnowledge() {
+            const agentId = document.getElementById('agent-id').value.trim();
+            const data = document.getElementById('knowledge-data').value.trim();
+            if (!agentId || !data) {
+                showMessage('Enter both Agent ID and Knowledge content', 'error');
+                return;
+            }
+            batchOps.push({ type: 'knowledge', data });
+            document.getElementById('knowledge-data').value = '';
+            renderBatchList();
+            showMessage('Knowledge queued successfully', 'success');
+        }
+
+        function queueAction() {
+            const agentId = document.getElementById('agent-id').value.trim();
+            const triggerType = document.getElementById('trigger-type').value;
+            const triggerValue = document.getElementById('trigger-value').value;
+            const actionType = document.getElementById('action-type').value;
+            let actionValue;
+
+            if (actionType === 'fill-form') {
+                actionValue = document.getElementById('action-value-select').value;
+            } else if (actionType === 'show-button') {
+                actionValue = {
+                    text: document.getElementById('action-button-text').value,
+                    url: document.getElementById('action-button-url').value
+                };
+            } else if (actionType === 'send-email') {
+                actionValue = {
+                    subject: document.getElementById('action-email-subject').value,
+                    content: document.getElementById('action-email-content').value,
+                    senderName: document.getElementById('action-email-sender').value,
+                    replyTo: document.getElementById('action-email-replyto').value,
+                    recipient: document.getElementById('action-email-recipient').value
+                };
+            } else if (actionType === 'send-api-request') {
+                actionValue = {
+                    method: document.getElementById('action-api-method').value,
+                    endpoint: document.getElementById('action-api-endpoint').value
+                };
+            } else if (actionType === 'search-in-website') {
+                actionValue = {
+                    website: document.getElementById('action-website-url').value,
+                    searchfor: document.getElementById('action-website-searchfor').value
+                };
+            } else if (actionType === 'show-video') {
+                actionValue = {
+                    platform: document.getElementById('action-video-platform').value,
+                    url: document.getElementById('action-video-url').value
+                };
+            } else if (actionType === 'use-knowledge-base') {
+                const sel = document.getElementById('action-kb-select');
+                const uuid = sel.value;
+                const title = sel.options[sel.selectedIndex]?.text || '';
+                actionValue = {
+                    knowledge: JSON.stringify({ id: uuid, type: 'knowledge', text: title })
+                };
+            } else if (actionType === 'show-screen-share-button') {
+                actionValue = {};
+            } else {
+                actionValue = document.getElementById('action-value-input').value;
+            }
+
+            const op = {
+                type: 'action',
+                trigger_type: triggerType,
+                trigger_value: triggerValue,
+                action_type: actionType,
+                action_value: actionValue
+            };
+
+            batchOps.push(op);
+            clearActionForm();
+            renderBatchList();
+            showMessage('Action queued successfully', 'success');
+        }
+
+        function queuePersona() {
+            const agentId = document.getElementById('agent-id').value.trim();
+            const name = document.getElementById('agent-name').value.trim();
+            const role = document.getElementById('agent-role').value.trim();
+            const guideline = document.getElementById('new-guideline').value.trim();
+            const prop = document.getElementById('persona-property').value;
+            const value = document.getElementById('persona-value').value;
+
+            if (!agentId) {
+                showMessage('Enter Agent ID', 'error');
+                return;
+            }
+
+            const op = { type: 'update_persona' };
+            if (name) op.name = name;
+            else if (role) op.role = role;
+            else if (guideline) op.guideline = guideline;
+            else if (prop && value) {
+                op.update_prop = prop;
+                op.update_value = value;
+            } else {
+                showMessage('Fill a Name, Role, Guideline, or Property+Value', 'error');
+                return;
+            }
+
+            batchOps.push(op);
+            clearPersonaForm();
+            renderBatchList();
+            showMessage('Persona change queued successfully', 'success');
+        }
+
+        // Clear form functions
+        function clearActionForm() {
+            document.getElementById('trigger-value').value = '';
+            document.getElementById('action-value-input').value = '';
+            document.getElementById('trigger-type').value = '';
+            document.getElementById('action-type').value = '';
+        }
+
+        function clearPersonaForm() {
+            document.getElementById('agent-name').value = '';
+            document.getElementById('agent-role').value = '';
+            document.getElementById('new-guideline').value = '';
+            document.getElementById('persona-property').value = '';
+            document.getElementById('persona-value').innerHTML = '<option value="">Select value</option>';
+        }
+
+        // Execute batch
+        async function executeBatch() {
+            const agentId = document.getElementById('agent-id').value.trim();
+            if (!agentId) {
+                showMessage('Please enter your Agent ID before applying changes.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const res = await fetch('/batch_update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agent_id: agentId,
+                        operations: batchOps
+                    })
+                });
+                const result = await res.json();
+                
+                if (result.chat_id) {
+                    showChatPreview(agentId, result.chat_id);
+                    batchOps = [];
+                    renderBatchList();
+                    showMessage('Changes applied successfully!', 'success');
+                } else {
+                    showMessage('Error applying changes: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (err) {
+                showMessage('Error applying batch: ' + err.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // UI state management
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showChatPreview(agentId, chatId) {
+            const mainContainer = document.getElementById('mainContainer');
+            const chatIframe = document.getElementById('chat-iframe');
+            
+            mainContainer.classList.remove('centered');
+            mainContainer.classList.add('split');
+            
+            chatIframe.src = `https://www.jotform.com/agent/${agentId}/view/${chatId}?apiKey=${JOTFORM_API_KEY}`;
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('message-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize batch list
+        renderBatchList();
+    </script>
+</body>
+</html>
