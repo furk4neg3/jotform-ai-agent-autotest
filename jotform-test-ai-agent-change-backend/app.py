@@ -485,6 +485,7 @@ def get_materials(agent_id):
     url = f'https://www.jotform.com/API/ai-agent-builder/agents/{agent_id}/materials'
     try:
         resp = client.session.get(url)
+        print(resp)
         resp.raise_for_status()
         return jsonify(resp.json().get('content', []))
     except Exception as e:

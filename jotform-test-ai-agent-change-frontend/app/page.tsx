@@ -78,7 +78,7 @@ export default function JotformAIAgent() {
 
   // Form lists and KBs
   const [forms, setForms] = useState<{ id: string; title: string }[]>([]);
-  const [knowledgeBases, setKnowledgeBases] = useState<{ id: string; name: string }[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<{ uuid: string; title: string }[]>([]);
 
   // Email action state
   const [actionEmailSubject, setActionEmailSubject] = useState("");
@@ -563,7 +563,9 @@ export default function JotformAIAgent() {
                     <div>
                       <Label>Select Form</Label>
                       <Select value={actionValue as string} onValueChange={setActionValue}>
-                        <SelectTrigger><SelectValue placeholder="Loading forms…" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder={forms.length ? "Select a form" : "Loading forms…"} />
+                        </SelectTrigger>
                         <SelectContent>
                           {forms.map(f => <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>)}
                         </SelectContent>
@@ -634,9 +636,22 @@ export default function JotformAIAgent() {
                     <div>
                       <Label>Select Knowledge Base</Label>
                       <Select value={actionValue as string} onValueChange={setActionValue}>
-                        <SelectTrigger><SelectValue placeholder="Loading…" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={knowledgeBases.length ? "Select a knowledge base" : "Loading knowledge bases…"}
+                            // This ensures the label is shown for the selected value
+                          >
+                            {
+                              knowledgeBases.find(kb => kb.uuid === actionValue)?.title || ""
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
-                          {knowledgeBases.map(kb => <SelectItem key={kb.id} value={kb.id}>{kb.name}</SelectItem>)}
+                          {knowledgeBases.map((kb, idx) => (
+                            <SelectItem key={`${kb.uuid}-${idx}`} value={kb.uuid}>
+                              {kb.title}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
