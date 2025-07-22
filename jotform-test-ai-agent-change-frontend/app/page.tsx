@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Trash2, MessageSquare, X, Plus, Settings, Brain, Zap, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image";
+import LiveChatPreview from "@/components/LiveChatPreview"
 
 interface QueuedOperation {
   id: string
@@ -119,6 +120,8 @@ export default function JotformAIAgent() {
       showError("Failed to load knowledge bases");
     }
   };
+
+  const [expectedReloads, setExpectedReloads] = useState<number>(0)
 
   useEffect(() => {
     if (actionType === "fill-form") fetchForms();
@@ -329,7 +332,7 @@ export default function JotformAIAgent() {
         body: JSON.stringify({
           agent_id: agentId,
           operations,
-        }),
+        }), 
       })
 
       if (!response.ok) {
@@ -343,6 +346,7 @@ export default function JotformAIAgent() {
       }
 
       if (result.chat_id) {
+        setExpectedReloads(queuedOps.length * 4 + 1)
         setChatId(result.chat_id)
         setChatOpen(true)
         setQueuedOps([]) // Clear queue on success
@@ -805,29 +809,30 @@ export default function JotformAIAgent() {
 
         {/* Chat Panel */}
         {chatOpen && (
-          <div className="space-y-6">
-            <Card className="border-0 shadow-sm h-full">
-              <CardHeader className="pb-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-medium text-gray-900 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2 text-orange-500" />
-                  Live Preview
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={closeChat} className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0 h-[600px]">
-                {chatId && config && (
-                  <iframe
-                    src={`https://www.jotform.com/agent/${agentId}/view/${chatId}?apiKey=${config.jotformApiKey}`}
-                    className="w-full h-full border-0 rounded-b-lg"
-                    sandbox="allow-scripts allow-same-origin allow-forms"
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+    <div className="space-y-6">
+      <Card className="border-0 shadow-sm h-full">
+        <CardHeader className="pb-4 flex items-center justify-between">
+          <CardTitle className="text-lg font-medium text-gray-900 flex items-center">
+            <MessageSquare className="w-5 h-5 mr-2 text-orange-500" />
+            Live Preview
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={closeChat}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+          <CardContent className="p-0">
+          {chatId && (
+            <LiveChatPreview
+              agentId={agentId}
+              chatId={chatId}
+              apiKey={config.jotformApiKey}
+              maxReloads={expectedReloads}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )}
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import os
 import json
 from dotenv import load_dotenv
 from flask_cors import CORS
+import threading
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
 
@@ -20,7 +21,38 @@ client = JotformAIAgentClient(
 )
 
 
+def send_preview_messages(agent_id: str, chat_id: str, ops: list):
+    """
+    Background helper that sends the initial greeting
+    and then one test-prompt per operation.
+    """
+    try:
 
+        # 2) for each op, build the same prompt you used
+        for op in ops:
+            typ = op.get("type")
+            prompt = None
+
+            if typ == "knowledge":
+                title = op.get("title", "Knowledge")
+                data  = op["data"]
+                prompt = generate_test_prompt(title, data, mode="knowledge")
+
+            elif typ == "action":
+                # mirror your build_causes_and_tasks + generate_test_prompt call
+                trigger = op.get("trigger_value", "")
+                action_val = op.get("action_value", {})
+                prompt = generate_test_prompt(trigger, json.dumps(action_val), mode="action")
+
+            elif typ == "update_persona":
+                prompt = generate_test_prompt("", "", mode="persona")
+
+            # else: skip unknown ops
+            if prompt:
+                client.send_message(agent_id, chat_id, prompt, is_first_question=False)
+
+    except Exception as e:
+        print(f"[bg send_preview_messages] error: {e}")
 
 def generate_test_prompt(title: str, data: str, mode: str) -> str:
     """
@@ -628,87 +660,76 @@ def build_causes_and_tasks(trigger_type, trigger_value, action_type, action_valu
 @app.route('/batch_update', methods=['POST'])
 def batch_update():
     try:
-        payload    = request.get_json()
-        agent_id   = payload.get('agent_id')
-        ops        = payload.get('operations', [])
+        payload  = request.get_json()
+        agent_id = payload.get('agent_id')
+        ops      = payload.get('operations', [])
         if not agent_id or not ops:
             return jsonify({'error': 'Need agent_id and a non-empty operations list'}), 400
 
-        # Start one preview chat
-        chat_resp    = client.create_chat(agent_id)
-        chat_id      = chat_resp["content"]["id"]
-        # Get the greeting
-        greet_resp   = client.send_message(agent_id, chat_id, "", is_first_question=True)
-
-        results = []
+        # ── 1) apply all of the ops up-front ──
         for op in ops:
-            typ = op.get('type')
-            try:
-                if typ == 'knowledge':
-                    # op: { type:'knowledge', title?:string, data:string }
-                    title  = op.get('title', 'Knowledge')
-                    data   = op['data']
-                    res    = client.add_knowledge(agent_id, title, data)
-                    prompt = generate_test_prompt(title, data, mode='knowledge')
-                elif typ == 'action':
-                    # op: { type:'action', trigger_type, trigger_value, action_type, action_value }
-                    # **reuse** the same logic you have in your add_action view
-                    causes, tasks = build_causes_and_tasks(
-                        op['trigger_type'],
-                        op['trigger_value'],
-                        op['action_type'],
-                        op['action_value']
-                    )
-                    # you may choose a fixed link/status/order/channels or carry them in op
-                    res = client.add_action(
-                        agent_id,
-                        link    = 'ANY',
-                        status  = 'ACTIVE',
-                        action_type = "BASIC",
-                        order   = 2,
-                        causes  = causes,
-                        tasks   = tasks,
-                        channels= ["all", "standalone", "chatbot", "phone", "voice", "messenger", "sms", "whatsapp"]
-                    )
-                    print(res)
-                    prompt = generate_test_prompt(
-                        op['trigger_value'],
-                        json.dumps(op['action_value']),
-                        mode='action'
-                    )
-                elif typ == 'update_persona':
-                    # op: { type:'update_persona', update_prop?, update_value?, name?, role?, guideline? }
-                    if op.get('name'):
-                        res = client.update_property(agent_id, 'name', op['name'], 'agent')
-                    elif op.get('role'):
-                        res = client.update_property(agent_id, 'role', op['role'], 'agent')
-                    elif op.get('guideline'):
-                        res = client.add_chat_guideline(agent_id, op['guideline'])
-                    else:
-                        res = client.update_property(
-                            agent_id,
-                            op['update_prop'],
-                            op['update_value'],
-                            'agent'
-                        )
-                    prompt = generate_test_prompt('', '', mode='persona')
+            typ = op.get("type")
+
+            if typ == "knowledge":
+                title = op.get("title", "Knowledge")
+                data  = op["data"]
+                client.add_knowledge(agent_id, title, data)
+
+            elif typ == "action":
+                # reuse your existing builder
+                causes, tasks = build_causes_and_tasks(
+                    op["trigger_type"],
+                    op["trigger_value"],
+                    op["action_type"],
+                    op["action_value"]
+                )
+                client.add_action(
+                    agent_id,
+                    link     = "ANY",
+                    status   = "ACTIVE",
+                    action_type = "BASIC",
+                    order    = 2,
+                    causes   = causes,
+                    tasks    = tasks,
+                    channels = ["all","standalone","chatbot","phone","voice","messenger","sms","whatsapp"]
+                )
+
+            elif typ == "update_persona":
+                # same as your old persona-update logic
+                if op.get("name"):
+                    client.update_property(agent_id, 'name', op['name'], 'agent')
+                elif op.get("role"):
+                    client.update_property(agent_id, 'role', op['role'], 'agent')
+                elif op.get("guideline"):
+                    client.add_chat_guideline(agent_id, op['guideline'])
                 else:
-                    raise ValueError(f"Unknown operation type: {typ}")
-                results.append({'operation': op, 'result': res})
-            except Exception as e:
-                results.append({'operation': op, 'error': str(e)})
-                continue
-            agent_resp = client.send_message(
-                agent_id,
-                chat_id,
-                prompt,
-                is_first_question=False
-            )
-            print(res)
-        print(chat_id, agent_id)
-        return jsonify({
-            'chat_id': chat_id
-        })
+                    client.update_property(
+                        agent_id,
+                        op['update_prop'],
+                        op['update_value'],
+                        'agent'
+                    )
+
+            else:
+                raise ValueError(f"Unknown operation type: {typ}")
+
+          # ── 2) create the preview chat ──
+        chat_resp = client.create_chat(agent_id)
+        chat_id   = chat_resp["content"]["id"]
+
+        # ── 2.5) send the initial greeting synchronously ──
+        client.send_message(agent_id, chat_id, "Hi, how are you?", is_first_question=True)
+
+        # ── 3) spawn background sender for the rest of the prompts ──
+        threading.Thread(
+            target=send_preview_messages,
+            args=(agent_id, chat_id, ops),
+            daemon=True
+        ).start()
+
+        # ── 4) return so frontend can open iframe ──
+        return jsonify({'chat_id': chat_id})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
