@@ -40,12 +40,19 @@ def send_preview_messages(agent_id: str, chat_id: str, ops: list):
 
             elif typ == "action":
                 # mirror your build_causes_and_tasks + generate_test_prompt call
-                trigger = op.get("trigger_value", "")
-                action_val = op.get("action_value", {})
-                prompt = generate_test_prompt(trigger, json.dumps(action_val), mode="action")
+                trigger_val = op.get("trigger_value", "")
+                trigger_ty = op.get("trigger_type", "")
+                trigger_payload = {"trigger_type": trigger_ty, "trigger_value": trigger_val}
+                prompt = generate_test_prompt("", json.dumps(trigger_payload), mode="action")
 
             elif typ == "update_persona":
-                prompt = generate_test_prompt("", "", mode="persona")
+                predefined = [
+                    "Let's make a casual conversation to test your personality. How are you?",
+                    "Thanks. What can I ask you?",
+                    "Who are you and what are you doing?"
+                ]
+                for msg in predefined:
+                    client.send_message(agent_id, chat_id, msg, is_first_question=False)
 
             # else: skip unknown ops
             if prompt:
@@ -59,19 +66,24 @@ def generate_test_prompt(title: str, data: str, mode: str) -> str:
     Use GPT to create a single question to exercise the new knowledge or action.
     mode: 'knowledge' | 'action' | 'persona'
     """
-    system = {
-        'role': 'system',
-        'content': 'You are a helpful assistant that generates test prompts. You act as a chatbot user, so act like a user at all times.'
-    }
+    
     if mode == 'knowledge':
+        system = {
+        'role': 'system',
+        'content': 'You are a test-prompt generator. Your task is to produce exactly one clear, open-ended question that can only be answered by using the knowledge provided.'
+        }
         user = {
             'role': 'user',
-            'content': f"The agent that you're talking to has knowledge {data}. Create a prompt that will make the agent answer using that knowledge."  
+            'content': f"Knowledge snippet: {data}\n Write a single question that tests the agent’s understanding of the information above."  
         }
     elif mode == 'action': 
+        system = {
+        'role': 'system',
+        'content': 'You are a test-prompt generator. Your job is to output exactly one realistic user message that will match the agent’s trigger criteria and cause it to execute its action.'
+        }
         user = {
             'role': 'user',
-            'content': f"Generate a single user message that would trigger the action for this action defined: {data}"  
+            'content': f"Action trigger pattern: {data}\n Write a single user message that satisfies these trigger conditions."  
         }
     elif mode == 'persona' and data is None:
         user = {
@@ -86,7 +98,7 @@ def generate_test_prompt(title: str, data: str, mode: str) -> str:
 
     try:
         resp = gpt_client.chat.completions.create(
-            model='gpt-4o-mini',  # Fixed: Use valid model name
+            model='gpt-4o-mini',  #Cheap model, can be changed to a better one.
             messages=[system, user], 
             max_tokens=50
         )
