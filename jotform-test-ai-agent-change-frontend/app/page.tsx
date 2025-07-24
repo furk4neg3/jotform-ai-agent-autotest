@@ -347,7 +347,7 @@ export default function JotformAIAgent() {
 
       if (result.chat_id) {
         const personaCount = queuedOps.filter(op => op.type === "persona").length
-        const totalReloads = 5 + queuedOps.length * 3 + 1 + personaCount * 2
+        const totalReloads = 6 + queuedOps.length * 2 + personaCount * 2
         setExpectedReloads(totalReloads)
         setChatId(result.chat_id)
         setChatOpen(true)

@@ -68,7 +68,7 @@ export default function LiveChatPreview({ agentId, chatId, apiKey, maxReloads }:
   }, [agentId, chatId, apiKey, showA, reloadCount, maxReloads])
 
   // finalization: ensure correct iframe is visible after last reload
-  useEffect(() => {
+  /*useEffect(() => {
     if (typeof maxReloads !== "number" || reloadCount < maxReloads) return
     const finalShowA = maxReloads % 2 == 0
     setShowA(finalShowA)
@@ -79,7 +79,7 @@ export default function LiveChatPreview({ agentId, chatId, apiKey, maxReloads }:
         finalIfr.contentWindow!.document.body.scrollHeight
       )
     } catch {}
-  }, [reloadCount, maxReloads])
+  }, [reloadCount, maxReloads])*/
 
   return (
     <div className="relative w-full h-screen">
